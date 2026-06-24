@@ -1,0 +1,43 @@
+{
+  "input": {
+    "military_experience": "Assisted with equipment inventory checks for a 6-person maintenance section and reported discrepancies to the section leader.",
+    "target_job_description": "Senior operations manager requiring 10 years of experience, a bachelor's degree, PMP certification, budget ownership, compliance leadership, and supervision of multiple teams.",
+    "mos_branch": "Junior maintenance team member"
+  },
+  "resume": {
+    "professional_resume_bullet": "Translated military experience (Junior maintenance team member): Assisted with equipment inventory checks for a 6-person maintenance section and reported discrepancies to the section leader, emphasizing leadership, operational coordination, accountability, and measurable mission support in civilian terms.",
+    "ats_optimized_bullet": "Applied leadership, operations management, team coordination, equipment accountability, risk management, and process improvement experience to assisted with equipment inventory checks for a 6-person maintenance section and reported discrepancies to the section leader."
+  },
+  "job_fit": {
+    "fit_label": "Partial Match",
+    "match_analysis": "Partial Match: The experience aligns with leadership, operations, team.",
+    "matched_keywords": [
+      "leadership",
+      "operations",
+      "team"
+    ],
+    "missing_keywords": [
+      "compliance"
+    ],
+    "interview_talking_points": [
+      "Describe the mission, team size, and operating environment in civilian terms.",
+      "Explain how the work connects to the target role requirements without overstating qualifications.",
+      "Prepare a concrete example showing leadership, accountability, or risk management from the provided experience.",
+      "Be ready to address gaps around: compliance."
+    ]
+  },
+  "evaluation": {
+    "accuracy_notes": "Output is grounded in the supplied experience and uses conservative civilian framing.",
+    "safety_flags": [
+      "Target role includes high-risk requirements not supported by the original experience."
+    ],
+    "unsupported_claims": [
+      "target mentions bachelor not supported by source",
+      "target mentions certification not supported by source",
+      "target mentions degree not supported by source",
+      "target requires 10 years not supported by source"
+    ],
+    "usefulness_notes": "Review the bullet for exact metrics before using it in a real resume."
+  },
+  "mode": "mock"
+}

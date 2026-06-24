@@ -1,0 +1,44 @@
+{
+  "input": {
+    "military_experience": "Led a team of 12 soldiers responsible for maintaining mission-critical communications equipment valued at $2.3M while coordinating preventive maintenance schedules and safety checks.",
+    "target_job_description": "Operations coordinator responsible for team coordination, equipment inventory, maintenance scheduling, safety compliance, communication with stakeholders, and process improvement across daily operations.",
+    "mos_branch": "Army communications team leader"
+  },
+  "resume": {
+    "professional_resume_bullet": "Translated military experience (Army communications team leader): Led a team of 12 soldiers responsible for maintaining mission-critical communications equipment valued at $2.3M while coordinating preventive maintenance schedules and safety checks, emphasizing leadership, operational coordination, accountability, and measurable mission support in civilian terms.",
+    "ats_optimized_bullet": "Applied leadership, operations management, team coordination, equipment accountability, risk management, and process improvement experience to led a team of 12 soldiers responsible for maintaining mission-critical communications equipment valued at $2.3m while coordinating preventive maintenance schedules and safety checks."
+  },
+  "job_fit": {
+    "fit_label": "Strong Match",
+    "match_analysis": "Strong Match: The experience aligns with operations, coordination, communication, maintenance, safety, equipment, process improvement, team.",
+    "matched_keywords": [
+      "operations",
+      "coordination",
+      "communication",
+      "maintenance",
+      "safety",
+      "equipment",
+      "process improvement",
+      "team"
+    ],
+    "missing_keywords": [
+      "compliance",
+      "inventory"
+    ],
+    "interview_talking_points": [
+      "Describe the mission, team size, and operating environment in civilian terms.",
+      "Explain how the work connects to the target role requirements without overstating qualifications.",
+      "Prepare a concrete example showing leadership, accountability, or risk management from the provided experience.",
+      "Be ready to address gaps around: compliance, inventory."
+    ]
+  },
+  "evaluation": {
+    "accuracy_notes": "Output is grounded in the supplied experience and uses conservative civilian framing.",
+    "safety_flags": [
+      "No obvious unsupported claims or factual drift detected in the deterministic review."
+    ],
+    "unsupported_claims": [],
+    "usefulness_notes": "Review the bullet for exact metrics before using it in a real resume."
+  },
+  "mode": "mock"
+}

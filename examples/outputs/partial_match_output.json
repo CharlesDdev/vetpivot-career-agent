@@ -1,0 +1,38 @@
+{
+  "input": {
+    "military_experience": "Coordinated daily training schedules for a platoon, prepared readiness updates, and briefed supervisors on personnel availability and task progress.",
+    "target_job_description": "Project coordinator responsible for project tracking, stakeholder communication, documentation, scheduling, risk updates, and cross-functional coordination.",
+    "mos_branch": "Army administrative specialist"
+  },
+  "resume": {
+    "professional_resume_bullet": "Translated military experience (Army administrative specialist): Coordinated daily training schedules for a platoon, prepared readiness updates, and briefed supervisors on personnel availability and task progress, emphasizing leadership, operational coordination, accountability, and measurable mission support in civilian terms.",
+    "ats_optimized_bullet": "Applied leadership, operations management, team coordination, equipment accountability, risk management, and process improvement experience to coordinated daily training schedules for a platoon, prepared readiness updates, and briefed supervisors on personnel availability and task progress."
+  },
+  "job_fit": {
+    "fit_label": "Partial Match",
+    "match_analysis": "Partial Match: The experience aligns with coordination, risk.",
+    "matched_keywords": [
+      "coordination",
+      "risk"
+    ],
+    "missing_keywords": [
+      "communication",
+      "project"
+    ],
+    "interview_talking_points": [
+      "Describe the mission, team size, and operating environment in civilian terms.",
+      "Explain how the work connects to the target role requirements without overstating qualifications.",
+      "Prepare a concrete example showing leadership, accountability, or risk management from the provided experience.",
+      "Be ready to address gaps around: communication, project."
+    ]
+  },
+  "evaluation": {
+    "accuracy_notes": "Output is grounded in the supplied experience and uses conservative civilian framing.",
+    "safety_flags": [
+      "No obvious unsupported claims or factual drift detected in the deterministic review."
+    ],
+    "unsupported_claims": [],
+    "usefulness_notes": "Review the bullet for exact metrics before using it in a real resume."
+  },
+  "mode": "mock"
+}
