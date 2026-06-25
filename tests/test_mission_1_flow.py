@@ -25,10 +25,10 @@ def test_interview_talking_points_use_star_examples():
     result = run_workflow(sample_input(), mode="mock")
 
     talking_points = "\n".join(result.job_fit.interview_talking_points)
-    assert "STAR example: Situation" in talking_points
-    assert "STAR example: Task" in talking_points
-    assert "STAR example: Action" in talking_points
-    assert "STAR example: Result" in talking_points
+    assert "S - Situation:" in talking_points
+    assert "T - Task:" in talking_points
+    assert "A - Action:" in talking_points
+    assert "R - Result:" in talking_points
 
 
 def test_auto_falls_back_to_mock_without_live_setup(monkeypatch):
