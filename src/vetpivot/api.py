@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from vetpivot.orchestrator import run_workflow
@@ -37,6 +38,17 @@ app = FastAPI(
     title="VetPivot Career Agent API",
     description="API bridge for the VetPivot Career Agent CLI/orchestrator workflow.",
     version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

@@ -21,6 +21,16 @@ def test_mock_workflow_returns_structured_report():
     assert result.evaluation.safety_flags
 
 
+def test_interview_talking_points_use_star_examples():
+    result = run_workflow(sample_input(), mode="mock")
+
+    talking_points = "\n".join(result.job_fit.interview_talking_points)
+    assert "STAR example: Situation" in talking_points
+    assert "STAR example: Task" in talking_points
+    assert "STAR example: Action" in talking_points
+    assert "STAR example: Result" in talking_points
+
+
 def test_auto_falls_back_to_mock_without_live_setup(monkeypatch):
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)

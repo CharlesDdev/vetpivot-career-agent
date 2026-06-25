@@ -57,13 +57,14 @@ def run_job_fit_agent(data: MissionInput, resume: ResumeOutput) -> JobFitOutput:
         match_text = f"{label}: The target role includes requirements that are not clearly supported."
 
     talking_points = [
-        "Describe the mission, team size, and operating environment in civilian terms.",
-        "Explain how the work connects to the target role requirements without overstating qualifications.",
-        "Prepare a concrete example showing leadership, accountability, or risk management from the provided experience.",
+        "STAR example: Situation - explain the mission, team size, and operating environment in civilian terms.",
+        "STAR example: Task - describe your responsibility for the work without overstating qualifications.",
+        "STAR example: Action - explain the leadership, coordination, safety, or maintenance steps you personally took.",
+        "STAR example: Result - connect the verified outcome or metric to the target role requirements.",
     ]
     if missing:
         missing_text = ", ".join(missing)
-        talking_points.append(f"Be ready to address gaps around: {missing_text}.")
+        talking_points.append(f"STAR gap prep: be ready to address missing target keywords with honest examples around {missing_text}.")
 
     return JobFitOutput(
         fit_label=label,
