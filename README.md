@@ -1,221 +1,370 @@
-# VetPivot Career Agent
+VetPivot Career Agent
 
-VetPivot Career Agent helps transitioning service members and veterans translate military experience into civilian resume language, evaluate job fit against a target role, and identify gaps or safety risks before applying.
+VetPivot Career Agent is a multi-agent career assistant designed to help transitioning service members and veterans translate military experience into civilian career opportunities.
 
-## Problem
+Rather than acting as a simple resume translator, VetPivot now coordinates multiple specialized AI agents that work together to:
 
-Military experience is often difficult to communicate in civilian hiring language. Veterans may have leadership, operations, logistics, maintenance, training, safety, and accountability experience, but their resume bullets can rely on military terms that do not map cleanly to job descriptions or applicant tracking systems.
+* Translate military experience into professional civilian resume language
+* Generate an ATS-optimized version of the same experience
+* Evaluate job fit against a target civilian position
+* Identify missing keywords and transferable skills
+* Generate interview talking points
+* Detect unsupported claims and potential factual drift before an application is submitted
 
-This creates several risks:
+The project demonstrates modern agent orchestration using Google ADK-inspired architecture while maintaining a simple web experience for end users.
 
-- Valuable experience may be undersold or misunderstood.
-- Resume bullets may miss important civilian keywords.
-- Job fit may be overstated or understated.
-- Generated career advice may invent credentials, metrics, degrees, certifications, or experience.
+⸻
 
-## Track: Agents for Good
+Problem
 
-VetPivot fits the Kaggle / Google AI Agents Capstone track **Agents for Good** because it supports veterans during the military-to-civilian career transition. The project focuses on practical career support while adding evaluation and safety checks to avoid misleading resume claims.
+Military experience is often difficult to communicate in civilian hiring language.
 
-## What VetPivot Career Agent Does
+Veterans may have years of leadership, logistics, maintenance, operations, safety, communications, or technical experience that is described using military terminology unfamiliar to civilian recruiters or Applicant Tracking Systems (ATS).
 
-Given a military experience bullet, optional MOS/branch context, and a target civilian job description, the CLI demo returns:
+This creates several challenges:
 
-- Professional civilian resume bullet
-- ATS-aligned resume bullet
-- Match label: `Strong Match`, `Partial Match`, or `Weak Match`
-- Match analysis
-- Matched and missing keywords
-- Interview talking points
-- Evaluation and safety notes
+* Valuable experience is overlooked.
+* Resume bullets miss important civilian terminology.
+* Applicants overstate or understate job fit.
+* AI-generated resumes can accidentally invent certifications, degrees, metrics, or responsibilities.
 
-## Architecture
+VetPivot Career Agent focuses on helping veterans present truthful, understandable, and competitive resumes while providing additional career guidance.
 
-```mermaid
-flowchart TD
-    A["User input: military bullet, optional MOS/branch, target job"] --> B["Orchestrator"]
-    B --> C["Resume Agent"]
-    C --> D{"Mode"}
-    D -->|"mock"| E["Deterministic mock translation"]
-    D -->|"auto/live"| F["VetPivot backend translation tool"]
-    F -->|"success"| G["Backend translated resume bullet"]
-    F -->|"failure/timeout/invalid response"| E
-    E --> H["Resume Output"]
-    G --> H
-    H --> I["Job Fit Agent"]
-    I --> J["Match label, matched keywords, missing keywords, talking points"]
-    J --> K["Evaluation Agent"]
-    K --> L["Safety flags, unsupported claims, factual drift notes"]
-    L --> M["Structured JSON report"]
-```
+⸻
 
-The project keeps the runnable demo intentionally small: a Python CLI, deterministic sample inputs, mock outputs, tests, and optional Google ADK-facing agent definitions.
+Kaggle Track
 
-## Agent Roles
+Agents for Good
 
-Resume Agent:
+VetPivot Career Agent supports veterans during the military-to-civilian transition by combining resume translation, job-fit evaluation, and AI safety into a single workflow.
 
-- Translates military experience into civilian resume language.
-- Produces a professional bullet and ATS-aligned bullet.
-- In backend-enabled modes, can use the VetPivot translation tool.
-- Falls back to deterministic mock output if the backend fails.
+⸻
 
-Job Fit Agent:
+Current Status
 
-- Compares translated experience against the target job description.
-- Uses simple labels only: `Strong Match`, `Partial Match`, `Weak Match`.
-- Identifies matched and missing keywords.
-- Suggests interview talking points grounded in the provided experience.
+Current implementation includes:
 
-Evaluation Agent:
+* ✅ React web application
+* ✅ FastAPI Career Agent API
+* ✅ Multi-agent orchestration
+* ✅ Resume Agent
+* ✅ Job Fit Agent
+* ✅ Evaluation Agent
+* ✅ VetPivot Translation Tool
+* ✅ Google ADK-compatible architecture
+* ✅ Offline mock mode
+* ✅ Local API integration
+* ✅ Job Fit visualization
+* ✅ Safety evaluation
+* ✅ 17 automated tests
 
-- Reviews the generated resume and job-fit output.
-- Flags unsupported claims, risky wording, and factual drift.
-- Checks important fact categories such as dollar amounts, team size, years of experience, credentials, degrees, and selected job titles.
+⸻
 
-## Tool Usage
+What VetPivot Career Agent Does
 
-Mission 2 added a VetPivot backend translation tool:
+The user provides:
 
-```text
-POST https://vetpivot-backend-796137818435.us-central1.run.app/api/translate
-Body: { "text": "..." }
-Response: { "translation": "..." }
-```
+* Military experience
+* Optional MOS / Branch
+* Target civilian job description
 
-The CLI behavior is intentionally conservative:
+The Career Agent returns:
 
-- `--mode mock` is deterministic and offline.
-- `--mode auto` attempts the backend translation tool and falls back to mock output.
-- Backend calls include timeout handling.
-- Invalid backend responses fall back to mock output.
+* Professional resume bullet
+* ATS-optimized resume bullet
+* Job Fit assessment
+* Matched keywords
+* Missing keywords
+* Interview talking points
+* Safety and evaluation notes
+* Unsupported claim detection
 
-Configuration:
+The experience is presented through the existing VetPivot web interface while the Career Agent API coordinates the underlying workflow.
 
-```bash
-export VETPIVOT_TRANSLATE_URL="https://vetpivot-backend-796137818435.us-central1.run.app/api/translate"
-export VETPIVOT_TRANSLATE_TIMEOUT_SECONDS="8"
-```
+⸻
 
-## Google ADK Alignment
+Current Architecture
 
-The project includes Google ADK-facing structure while preserving a reliable local CLI:
+React VetPivot UI
+        │
+        ▼
+Career Agent API (FastAPI)
+        │
+        ▼
+Orchestrator
+        │
+ ┌──────┼──────────────┐
+ ▼      ▼              ▼
+Resume  Job Fit    Evaluation
+Agent   Agent      Agent
+        │
+        ▼
+VetPivot Translation Tool
+        │
+        ▼
+Structured Career Guidance
 
-- `src/vetpivot/agent.py` exposes `root_agent`, matching ADK project expectations.
-- `src/vetpivot/adk_agents.py` defines the root agent and specialized sub-agents.
-- The Resume Agent registers the VetPivot translation function as an ADK tool.
-- The local CLI remains deterministic in mock mode for reproducible evaluation.
-- Tests cover tool behavior, fallback behavior, and evaluation checks.
+⸻
 
-Google ADK live execution remains optional because the capstone evidence package prioritizes reproducible local judging.
+Agent Responsibilities
 
-## Evaluation and Safety Approach
+Resume Agent
 
-Evaluation focuses on both final output quality and agent/tool behavior:
+Responsible for:
 
-- Unit tests verify mock mode, backend success, backend fallback, invalid backend response fallback, and ADK entrypoint import.
-- Safety tests verify unsupported credential detection.
-- Factual drift checks flag changed or omitted dollar amounts, team size, years of experience, credentials, degrees, and selected job titles.
-- `EVALS.md` records the rubric, test cases, and manual review checklist.
-- Demo outputs are saved under `examples/outputs/` for judge inspection.
+* Translating military experience into civilian language
+* Producing:
+    * Professional Resume Bullet
+    * ATS-Optimized Resume Bullet
+* Calling the VetPivot Translation Tool when available
+* Falling back to deterministic mock behavior if needed
 
-## Demo Cases
+⸻
 
-Three deterministic mock demo cases are included:
+Job Fit Agent
 
-| Case | Input | Saved Output | Purpose |
-|---|---|---|---|
-| Strong match | `examples/strong_match.json` | `examples/outputs/strong_match_output.json` | Shows close alignment with an operations coordinator role |
-| Partial match | `examples/partial_match.json` | `examples/outputs/partial_match_output.json` | Shows some transferable coordination experience with gaps |
-| Safety risk / overclaim | `examples/safety_risk_overclaim.json` | `examples/outputs/safety_risk_overclaim_output.json` | Shows a senior role with degree/certification/experience requirements that should not be invented |
+Responsible for:
 
-## How To Run Mock Demo
+* Comparing experience against a target job
+* Determining:
+    * Strong Match
+    * Partial Match
+    * Weak Match
+* Identifying:
+    * Matched keywords
+    * Missing keywords
+    * Interview talking points
 
-Run one sample:
+⸻
 
-```bash
-PYTHONPATH=src python3 -m vetpivot.main --mode mock --input examples/strong_match.json
-```
+Evaluation Agent
 
-Run all three samples:
+Responsible for reviewing AI output before presenting it to the user.
 
-```bash
-PYTHONPATH=src python3 -m vetpivot.main --mode mock --input examples/strong_match.json
-PYTHONPATH=src python3 -m vetpivot.main --mode mock --input examples/partial_match.json
-PYTHONPATH=src python3 -m vetpivot.main --mode mock --input examples/safety_risk_overclaim.json
-```
+Checks include:
 
-## How To Run Tests
+* Unsupported claims
+* Factual drift
+* Risky wording
+* Dollar amounts
+* Team size
+* Certifications
+* Degrees
+* Years of experience
+* Job titles
 
-```bash
-PYTHONPATH=src python3 -m pytest -p no:cacheprovider
-```
+⸻
 
-## Known Limitations
+Tool Usage
 
-- Mock mode is deterministic and useful for judging, but it is not a full LLM resume writer.
-- Backend translation may be unavailable in local Python environments if SSL trust is not configured.
-- Google ADK live execution is structured but not required for the offline evidence package.
-- The project does not include a MOS database or job taxonomy.
-- Fit labels are simple and non-numeric by design.
-- The tool does not store user data.
-- The project does not include frontend, database, authentication, dashboard, job tracking, job board integration, long-term memory, upload parsing, or deployment.
+Mission 2 introduced the VetPivot Translation Tool.
 
-## API Bridge
+The Resume Agent may call the existing VetPivot backend instead of relying entirely on prompt generation.
 
-Mission 4 adds a small FastAPI bridge so an existing frontend can eventually call the Career Agent workflow without changing the CLI.
+When unavailable, the workflow automatically falls back to deterministic mock mode.
 
-Start the local API server:
+This allows:
 
-```bash
+* Offline development
+* Reliable testing
+* Consistent demonstrations
+* Graceful failure handling
+
+⸻
+
+Google ADK Alignment
+
+The project follows Google ADK design principles.
+
+Included:
+
+* Root Agent
+* Specialized sub-agents
+* Tool registration
+* Orchestration layer
+* Typed schemas
+* Evaluation layer
+* Deterministic testing
+
+Live Gemini execution is optional and can be enabled later without changing the overall architecture.
+
+⸻
+
+Evaluation & Safety
+
+VetPivot treats evaluation as part of the workflow rather than something performed afterward.
+
+Safety checks include:
+
+* Unsupported credentials
+* Unsupported certifications
+* Unsupported education
+* Unsupported years of experience
+* Factual drift detection
+* Resume honesty validation
+
+Evaluation artifacts include:
+
+* Automated tests
+* Demo scenarios
+* Evaluation rubric
+* Manual review checklist
+
+⸻
+
+Running the Project
+
+Recommended — Web Application
+
+1. Start the Career Agent API
+
+cd vetpivot-career-agent
 PYTHONPATH=src uvicorn vetpivot.api:app --host 127.0.0.1 --port 8000
-```
 
-Open interactive API docs:
+2. Start the VetPivot Frontend
 
-```text
-http://127.0.0.1:8000/docs
-```
+cd vetpivot-frontend
+npm install
+npm run dev
 
-Endpoint:
+3. Open the application
 
-```text
+http://127.0.0.1:3000
+
+The frontend communicates with:
+
 POST /api/career-agent
-```
 
-Example request:
+running locally.
 
-```bash
-curl -sS -X POST http://127.0.0.1:8000/api/career-agent \
-  -H "Content-Type: application/json" \
-  -d '{
-    "military_experience": "Led a team of 12 soldiers maintaining communications equipment valued at $2.3M.",
-    "mos_branch": "Army communications team leader",
-    "target_job_description": "Operations coordinator responsible for team coordination, equipment inventory, safety compliance, and communication."
-  }'
-```
+⸻
 
-Response fields:
+CLI (Developer Mode)
 
-- `professional_resume_bullet`
-- `ats_optimized_bullet`
-- `job_fit_assessment`
-- `matched_keywords`
-- `missing_keywords`
-- `interview_talking_points`
-- `evaluation_notes`
-- `safety_flags`
-- `unsupported_claims`
-- `mode`
+The CLI remains available for development, testing, and reproducible demonstrations.
 
-The API defaults to deterministic `mock` mode. This is an API bridge only; no frontend or deployment is included.
+Run a demo:
 
-## Kaggle Notebook Walkthrough
+PYTHONPATH=src python3 -m vetpivot.main \
+--mode mock \
+--input examples/strong_match.json
 
-A judge-facing offline walkthrough is available at:
+⸻
 
-```text
-notebooks/vetpivot_career_agent_demo.ipynb
-```
+Running Tests
 
-The notebook explains the problem, Agents for Good track, architecture, agent roles, tool usage, Google ADK alignment, safety/evaluation approach, and known limitations. It runs the strong match, partial match, and safety-risk demo cases in deterministic `mock` mode without live credentials.
+Career Agent:
+
+PYTHONPATH=src python3 -m pytest -p no:cacheprovider
+
+Frontend:
+
+npm run build
+
+Current status:
+
+* ✅ 17 tests passing
+* ✅ Frontend build passing
+
+⸻
+
+Demo Scenarios
+
+Three deterministic demo cases are included.
+
+Strong Match
+
+Demonstrates:
+
+* Resume translation
+* Strong job alignment
+* Minimal skill gaps
+
+⸻
+
+Partial Match
+
+Demonstrates:
+
+* Transferable skills
+* Missing keywords
+* Interview preparation guidance
+
+⸻
+
+Safety Risk
+
+Demonstrates:
+
+* Unsupported claim detection
+* Degree requirements
+* Certification requirements
+* Years of experience validation
+
+⸻
+
+Current Limitations
+
+Current limitations include:
+
+* Job Fit uses qualitative labels rather than a validated scoring model.
+* Mock mode remains the default demonstration path.
+* Live Google ADK/Gemini integration is optional and not required for local use.
+* Backend SSL configuration may vary by local Python environment.
+* No persistent user accounts.
+* No database.
+* No recruiter dashboard.
+* No job application tracking.
+* No long-term memory.
+* No deployment pipeline.
+
+⸻
+
+Future Roadmap
+
+Planned enhancements include:
+
+* Live Google ADK execution
+* Gemini-powered production workflow
+* Deployment of the Career Agent API
+* Enhanced job-fit reasoning
+* STAR interview response generation
+* Resume version comparison
+* MOS knowledge integration
+* Production authentication
+* Persistent user sessions
+
+⸻
+
+Repository Structure
+
+React Frontend
+        │
+        ▼
+Career Agent API
+        │
+        ▼
+Multi-Agent System
+        ├── Resume Agent
+        ├── Job Fit Agent
+        ├── Evaluation Agent
+        └── VetPivot Translation Tool
+Supporting Assets
+├── Demo Notebook
+├── Evaluation Rubrics
+├── Sample Inputs
+├── Sample Outputs
+├── Automated Tests
+└── Documentation
+
+⸻
+
+Vision
+
+The original VetPivot project translated military experience into civilian resume language.
+
+VetPivot Career Agent expands that idea into a complete AI-assisted career guidance system.
+
+Instead of simply rewriting resume bullets, the application helps veterans understand how their experience aligns with civilian careers, identify gaps before applying, prepare for interviews, and verify that generated content remains truthful and defensible.
+
+The long-term goal is to provide veterans with an AI career advisor that is transparent, trustworthy, and grounded in accurate representation of their military experience.
