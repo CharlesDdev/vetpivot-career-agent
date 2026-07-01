@@ -31,12 +31,28 @@ class OnetCareerData:
     work_activities: list[str] = field(default_factory=list)
 
 
-def _credentials() -> tuple[str, str]:
+def _api_key() -> str:
+    key = os.getenv("ONET_API_KEY") or os.getenv("ONET_KEY")
+    if not key or not key.strip():
+        raise OnetUnavailableError("O*NET API key is not configured.")
+    return key.strip()
+
+
+def _basic_credentials() -> tuple[str, str]:
     username = os.getenv("ONET_USERNAME") or os.getenv("ONET_USER")
     password = os.getenv("ONET_PASSWORD") or os.getenv("ONET_PASS")
     if not username or not password:
         raise OnetUnavailableError("O*NET credentials are not configured.")
     return username, password
+
+
+def _auth_headers() -> dict[str, str]:
+    try:
+        return {"X-API-Key": _api_key()}
+    except OnetUnavailableError:
+        username, password = _basic_credentials()
+        token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
+        return {"Authorization": f"Basic {token}"}
 
 
 def _base_url() -> str:
@@ -52,14 +68,12 @@ def _timeout_seconds() -> float:
 
 
 def _get_json(path: str) -> dict[str, Any]:
-    username, password = _credentials()
-    token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
     request = Request(
         f"{_base_url()}{path}",
         headers={
             "Accept": "application/json",
-            "Authorization": f"Basic {token}",
             "User-Agent": "VetPivot Career Agent",
+            **_auth_headers(),
         },
     )
     try:
