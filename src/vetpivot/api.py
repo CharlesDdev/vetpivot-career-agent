@@ -8,10 +8,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from vetpivot.gemini_client import GeminiUnavailableError
 from vetpivot.orchestrator import run_workflow
 from vetpivot.schemas import MissionInput, MissionReport
 
-ApiMode = Literal["mock", "auto"]
+ApiMode = Literal["mock", "live", "auto"]
 
 
 class CareerAgentRequest(BaseModel):
@@ -45,6 +46,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "https://vet-resume-builder.web.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -61,6 +63,11 @@ def root() -> dict[str, str]:
     }
 
 
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
 @app.post("/api/career-agent", response_model=CareerAgentResponse)
 def career_agent(request: CareerAgentRequest) -> CareerAgentResponse:
     mission_input = MissionInput(
@@ -72,6 +79,8 @@ def career_agent(request: CareerAgentRequest) -> CareerAgentResponse:
         report = run_workflow(mission_input, mode=request.mode)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except GeminiUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     if not isinstance(report, MissionReport):
         raise HTTPException(status_code=500, detail="Career agent did not return a structured report")

@@ -3,14 +3,18 @@ name = "vetpivot-career-agent"
 version = "0.1.0"
 description = "Mission 1 CLI demo for translating military experience and evaluating civilian job fit."
 requires-python = ">=3.11"
-dependencies = ["fastapi"]
+dependencies = ["fastapi", "uvicorn[standard]"]
 
 [project.optional-dependencies]
-api = ["uvicorn"]
-live = ["google-adk"]
+api = ["uvicorn[standard]"]
+live = ["google-adk", "google-genai"]
 
 [project.scripts]
 vetpivot = "vetpivot.main:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

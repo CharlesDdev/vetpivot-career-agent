@@ -2,6 +2,7 @@ import json
 
 from vetpivot.agents.evaluation_agent import run_evaluation_agent
 from vetpivot.agents.resume_agent import run_resume_agent
+from vetpivot.gemini_client import GeminiUnavailableError
 from vetpivot.orchestrator import run_local_workflow, run_workflow
 from vetpivot.schemas import JobFitOutput, MissionInput, ResumeOutput
 from vetpivot.tools import vetpivot_translate_tool
@@ -90,13 +91,11 @@ def test_adk_translation_tool_returns_structured_error(monkeypatch):
     assert "backend unavailable" in result["error_message"]
 
 
-def test_auto_mode_backend_failure_falls_back_to_mock(monkeypatch):
-    def failing_translate(_: str) -> str:
-        raise VetPivotTranslateError("backend unavailable")
+def test_auto_mode_gemini_failure_falls_back_to_mock():
+    def failing_gemini(_: str, __: str) -> dict[str, object]:
+        raise GeminiUnavailableError("Gemini unavailable")
 
-    monkeypatch.setattr("vetpivot.agents.resume_agent.translate_text", failing_translate)
-
-    result = run_workflow(sample_input(), mode="auto")
+    result = run_workflow(sample_input(), mode="auto", gemini_generator=failing_gemini)
 
     assert result.mode == "mock"
 

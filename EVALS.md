@@ -4,7 +4,7 @@
 
 This file defines how the project is judged.
 
-The goal is not only to ask whether the CLI runs, but whether the system translates experience truthfully, evaluates job fit conservatively, uses the backend tool safely, and flags risky output. For Kaggle capstone evidence, the project also includes deterministic demo cases and saved outputs.
+The goal is not only to ask whether the CLI runs, but whether the system translates experience truthfully, evaluates job fit conservatively, uses Gemini/live mode safely, falls back correctly in auto mode, and flags risky output. For Kaggle capstone evidence, the project also includes deterministic demo cases and saved outputs.
 
 ## Success Criteria
 
@@ -20,6 +20,7 @@ The project should be evaluated against:
 8. Factual preservation
 9. Judge readability
 10. Demo reproducibility
+11. Gemini live-mode reliability
 
 ## Evaluation Rubric
 
@@ -35,6 +36,7 @@ The project should be evaluated against:
 | Factual Preservation | Loses key facts | Flags some drift | Flags dollar amounts, team size, years, credentials, degrees, and job titles |
 | Judge Readability | Hard to understand | Docs explain basics | README, diagram, and draft explain the project clearly |
 | Demo Reproducibility | Demo depends on live services | Some local demo coverage | All core demos run offline in mock mode |
+| Gemini Live Mode | Live mode is untested or changes response shape | Mocked Gemini tests cover basic output | Live, auto fallback, invalid JSON, and API mode behavior are covered without requiring real API calls |
 
 ## Test Cases
 
@@ -189,6 +191,54 @@ Pass/fail notes:
 
 - Saved output: `examples/outputs/safety_risk_overclaim_output.json`
 
+### Case 11: Gemini Live Workflow With Mocked Responses
+
+Input:
+
+- Valid Mission input
+- Mocked Gemini responses for Resume Agent, Job Fit Agent, and Evaluation Agent
+
+Expected behavior:
+
+- `mode="live"` returns a structured `MissionReport`
+- Resume, job-fit, and evaluation fields are populated
+- API response shape remains unchanged
+
+Pass/fail notes:
+
+- Covered by `tests/test_live_workflow.py` and `tests/test_api.py`
+
+### Case 12: Strict Live Failure
+
+Input:
+
+- Valid Mission input
+- Gemini dependency, credentials, API call, or JSON parsing unavailable
+
+Expected behavior:
+
+- `mode="live"` fails clearly
+- It does not silently fall back to mock
+
+Pass/fail notes:
+
+- Covered by `tests/test_live_workflow.py`
+
+### Case 13: Auto Fallback
+
+Input:
+
+- Valid Mission input
+- Gemini unavailable
+
+Expected behavior:
+
+- `mode="auto"` falls back to deterministic mock output
+
+Pass/fail notes:
+
+- Covered by `tests/test_live_workflow.py`
+
 ## Manual Review Checklist
 
 Before calling capstone evidence ready:
@@ -202,7 +252,7 @@ Before calling capstone evidence ready:
 - [ ] `KAGGLE_SUBMISSION_DRAFT.md` covers title, summary, problem, solution, concepts, safety/evaluation, limitations, and future work
 - [ ] No database, frontend, auth, upload parsing, job tracking, MOS database, dashboard, long-term memory, job board integration, or deployment added
 - [ ] Safety notes identify unsupported claims or factual drift
-- [ ] Live backend and Google ADK limitations are disclosed clearly
+- [ ] Gemini live mode, auto fallback, backend helper, and Google ADK limitations are disclosed clearly
 
 ## Mission 4 API Bridge Evaluation
 
@@ -218,6 +268,8 @@ API tests:
 
 - Valid request returns `200` and required fields.
 - Explicit mock mode returns a mock report.
+- Explicit live mode is accepted and preserves the response shape.
+- Unavailable live mode returns a clear error.
 - Missing `military_experience` returns validation error.
 - Missing `target_job_description` returns validation error.
 

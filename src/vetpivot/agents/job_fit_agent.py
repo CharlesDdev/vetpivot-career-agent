@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+
+from vetpivot.gemini_client import GeminiGenerator, GeminiUnavailableError, generate_json
 from vetpivot.schemas import JobFitOutput, MissionInput, ResumeOutput
 
 KEYWORD_BANK = [
@@ -22,6 +25,13 @@ KEYWORD_BANK = [
     "team",
     "project",
 ]
+
+JOB_FIT_LIVE_SYSTEM_INSTRUCTION = (
+    "You are the VetPivot Job Fit Agent. Compare the supplied experience and resume bullets to the target job. "
+    "Use only these fit labels: Strong Match, Partial Match, Weak Match. Do not use numeric scoring. "
+    "Return only valid JSON with keys fit_label, match_analysis, matched_keywords, missing_keywords, "
+    "and interview_talking_points. Interview talking points must include STAR guidance."
+)
 
 
 def _job_keywords(job_description: str) -> list[str]:
@@ -72,4 +82,53 @@ def run_job_fit_agent(data: MissionInput, resume: ResumeOutput) -> JobFitOutput:
         matched_keywords=matched,
         missing_keywords=missing,
         interview_talking_points=talking_points,
+    )
+
+
+def _require_text(payload: dict[str, object], key: str) -> str:
+    value = payload.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise GeminiUnavailableError(f"Gemini job-fit response missing usable {key}.")
+    return value.strip()
+
+
+def _require_text_list(payload: dict[str, object], key: str) -> list[str]:
+    value = payload.get(key)
+    if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
+        raise GeminiUnavailableError(f"Gemini job-fit response missing usable {key}.")
+    return [item.strip() for item in value]
+
+
+def run_live_job_fit_agent(data: MissionInput, resume: ResumeOutput, generator: GeminiGenerator = generate_json) -> JobFitOutput:
+    """Use Gemini to produce structured job-fit analysis."""
+    prompt = json.dumps(
+        {
+            "military_experience": data.military_experience,
+            "mos_branch": data.mos_branch,
+            "target_job_description": data.target_job_description,
+            "resume": {
+                "professional_resume_bullet": resume.professional_resume_bullet,
+                "ats_optimized_bullet": resume.ats_optimized_bullet,
+            },
+            "allowed_fit_labels": ["Strong Match", "Partial Match", "Weak Match"],
+            "required_json_schema": {
+                "fit_label": "one allowed label",
+                "match_analysis": "brief grounded explanation",
+                "matched_keywords": ["keyword supported by the source"],
+                "missing_keywords": ["target keyword not clearly supported"],
+                "interview_talking_points": ["STAR-format talking point grounded in the input"],
+            },
+        },
+        indent=2,
+    )
+    payload = generator(JOB_FIT_LIVE_SYSTEM_INSTRUCTION, prompt)
+    fit_label = _require_text(payload, "fit_label")
+    if fit_label not in {"Strong Match", "Partial Match", "Weak Match"}:
+        raise GeminiUnavailableError("Gemini job-fit response returned an invalid fit_label.")
+    return JobFitOutput(
+        fit_label=fit_label,  # type: ignore[arg-type]
+        match_analysis=_require_text(payload, "match_analysis"),
+        matched_keywords=_require_text_list(payload, "matched_keywords"),
+        missing_keywords=_require_text_list(payload, "missing_keywords"),
+        interview_talking_points=_require_text_list(payload, "interview_talking_points"),
     )

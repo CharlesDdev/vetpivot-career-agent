@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import re
 
+from vetpivot.gemini_client import GeminiGenerator, GeminiUnavailableError, generate_json
 from vetpivot.schemas import EvaluationOutput, JobFitOutput, MissionInput, ResumeOutput
 
 RISKY_TERMS = ["certified", "expert", "guaranteed", "clearance", "degree"]
@@ -16,6 +18,13 @@ JOB_TITLE_PATTERNS = [
     r"\b(operations coordinator)\b",
     r"\b(supervisor)\b",
 ]
+
+EVALUATION_LIVE_SYSTEM_INSTRUCTION = (
+    "You are the VetPivot Evaluation Agent. Review the generated resume and job-fit output for accuracy, safety, "
+    "unsupported claims, factual drift, and usefulness. Flag invented credentials, degrees, years of experience, "
+    "changed dollar amounts, changed team size, unsupported job titles, and overstated fit. Return only valid JSON "
+    "with keys accuracy_notes, safety_flags, unsupported_claims, and usefulness_notes."
+)
 
 
 def _money_facts(text: str) -> list[str]:
@@ -124,4 +133,59 @@ def run_evaluation_agent(data: MissionInput, resume: ResumeOutput, job_fit: JobF
         safety_flags=safety_flags,
         unsupported_claims=unsupported + unsupported_target_requirements + factual_drift,
         usefulness_notes="Review the bullet for exact metrics before using it in a real resume.",
+    )
+
+
+def _require_text(payload: dict[str, object], key: str) -> str:
+    value = payload.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise GeminiUnavailableError(f"Gemini evaluation response missing usable {key}.")
+    return value.strip()
+
+
+def _require_text_list(payload: dict[str, object], key: str) -> list[str]:
+    value = payload.get(key)
+    if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
+        raise GeminiUnavailableError(f"Gemini evaluation response missing usable {key}.")
+    return [item.strip() for item in value]
+
+
+def run_live_evaluation_agent(
+    data: MissionInput,
+    resume: ResumeOutput,
+    job_fit: JobFitOutput,
+    generator: GeminiGenerator = generate_json,
+) -> EvaluationOutput:
+    """Use Gemini to produce structured safety and quality evaluation."""
+    prompt = json.dumps(
+        {
+            "military_experience": data.military_experience,
+            "mos_branch": data.mos_branch,
+            "target_job_description": data.target_job_description,
+            "resume": {
+                "professional_resume_bullet": resume.professional_resume_bullet,
+                "ats_optimized_bullet": resume.ats_optimized_bullet,
+            },
+            "job_fit": {
+                "fit_label": job_fit.fit_label,
+                "match_analysis": job_fit.match_analysis,
+                "matched_keywords": job_fit.matched_keywords,
+                "missing_keywords": job_fit.missing_keywords,
+                "interview_talking_points": job_fit.interview_talking_points,
+            },
+            "required_json_schema": {
+                "accuracy_notes": "brief factual-preservation assessment",
+                "safety_flags": ["safety issue or no obvious issue"],
+                "unsupported_claims": ["unsupported claim or target requirement"],
+                "usefulness_notes": "brief usefulness note",
+            },
+        },
+        indent=2,
+    )
+    payload = generator(EVALUATION_LIVE_SYSTEM_INSTRUCTION, prompt)
+    return EvaluationOutput(
+        accuracy_notes=_require_text(payload, "accuracy_notes"),
+        safety_flags=_require_text_list(payload, "safety_flags"),
+        unsupported_claims=_require_text_list(payload, "unsupported_claims"),
+        usefulness_notes=_require_text(payload, "usefulness_notes"),
     )
