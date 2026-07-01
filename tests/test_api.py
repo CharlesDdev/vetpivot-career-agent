@@ -29,6 +29,7 @@ def test_career_agent_endpoint_returns_mock_report():
     assert body["evaluation_notes"]
     assert body["safety_flags"]
     assert body["mode"] == "mock"
+    assert body["workflow_mode"] == "targeted"
 
 
 def test_health_endpoint_returns_ok_status():
@@ -92,8 +93,14 @@ def test_career_agent_endpoint_accepts_live_mode(monkeypatch):
         "safety_flags",
         "unsupported_claims",
         "mode",
+        "workflow_mode",
+        "suggested_roles",
+        "selected_target_role",
+        "career_discovery_notes",
+        "onet_reference",
     }
     assert body["mode"] == "live"
+    assert body["workflow_mode"] == "targeted"
 
 
 def test_career_agent_endpoint_returns_503_when_live_unavailable(monkeypatch):
@@ -120,10 +127,16 @@ def test_career_agent_endpoint_requires_military_experience():
     assert response.status_code == 422
 
 
-def test_career_agent_endpoint_requires_target_job_description():
+def test_career_agent_endpoint_uses_discovery_when_target_job_omitted():
     payload = valid_payload()
     del payload["target_job_description"]
 
     response = client.post("/api/career-agent", json=payload)
 
-    assert response.status_code == 422
+    assert response.status_code == 200
+    body = response.json()
+    assert body["workflow_mode"] == "discovery"
+    assert body["suggested_roles"]
+    assert body["selected_target_role"]
+    assert body["career_discovery_notes"]
+    assert body["professional_resume_bullet"]

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,7 +17,7 @@ ApiMode = Literal["mock", "live", "auto"]
 
 class CareerAgentRequest(BaseModel):
     military_experience: str = Field(..., min_length=1)
-    target_job_description: str = Field(..., min_length=1)
+    target_job_description: str = ""
     mos_branch: str = ""
     mode: ApiMode = "mock"
 
@@ -33,6 +33,11 @@ class CareerAgentResponse(BaseModel):
     safety_flags: list[str]
     unsupported_claims: list[str]
     mode: str
+    workflow_mode: str = "targeted"
+    suggested_roles: list[dict[str, str]] = Field(default_factory=list)
+    selected_target_role: str = ""
+    career_discovery_notes: str = ""
+    onet_reference: dict[str, Any] = Field(default_factory=dict)
 
 
 app = FastAPI(
@@ -85,6 +90,7 @@ def career_agent(request: CareerAgentRequest) -> CareerAgentResponse:
     if not isinstance(report, MissionReport):
         raise HTTPException(status_code=500, detail="Career agent did not return a structured report")
 
+    discovery = report.discovery
     return CareerAgentResponse(
         professional_resume_bullet=report.resume.professional_resume_bullet,
         ats_optimized_bullet=report.resume.ats_optimized_bullet,
@@ -96,4 +102,28 @@ def career_agent(request: CareerAgentRequest) -> CareerAgentResponse:
         safety_flags=report.evaluation.safety_flags,
         unsupported_claims=report.evaluation.unsupported_claims,
         mode=report.mode,
+        workflow_mode=report.workflow_mode,
+        suggested_roles=[
+            {
+                "title": role.title,
+                "explanation": role.explanation,
+                "onet_code": role.onet_code,
+                "source": role.source,
+            }
+            for role in discovery.suggested_roles
+        ]
+        if discovery
+        else [],
+        selected_target_role=discovery.selected_target_role if discovery else "",
+        career_discovery_notes=discovery.career_discovery_notes if discovery else "",
+        onet_reference={
+            "used": discovery.onet_reference.used,
+            "unavailable_reason": discovery.onet_reference.unavailable_reason,
+            "occupations": discovery.onet_reference.occupations,
+            "tasks": discovery.onet_reference.tasks,
+            "skills": discovery.onet_reference.skills,
+            "work_activities": discovery.onet_reference.work_activities,
+        }
+        if discovery
+        else {},
     )

@@ -1,4 +1,4 @@
-"""Dataclasses for the Mission 1 CLI workflow."""
+"""Dataclasses for the Career Agent workflow."""
 
 from __future__ import annotations
 
@@ -6,19 +6,24 @@ from dataclasses import asdict, dataclass, field
 from typing import Literal
 
 FitLabel = Literal["Strong Match", "Partial Match", "Weak Match"]
+WorkflowMode = Literal["targeted", "discovery"]
 
 
 @dataclass(frozen=True)
 class MissionInput:
     military_experience: str
-    target_job_description: str
+    target_job_description: str = ""
     mos_branch: str = ""
 
     def validate(self) -> None:
         if not self.military_experience.strip():
             raise ValueError("military_experience is required")
-        if not self.target_job_description.strip():
-            raise ValueError("target_job_description is required")
+
+    @property
+    def workflow_mode(self) -> WorkflowMode:
+        if self.target_job_description.strip():
+            return "targeted"
+        return "discovery"
 
 
 @dataclass(frozen=True)
@@ -45,12 +50,40 @@ class EvaluationOutput:
 
 
 @dataclass(frozen=True)
+class SuggestedRole:
+    title: str
+    explanation: str
+    onet_code: str = ""
+    source: str = ""
+
+
+@dataclass(frozen=True)
+class OnetReference:
+    used: bool
+    unavailable_reason: str = ""
+    occupations: list[dict[str, str]] = field(default_factory=list)
+    tasks: list[str] = field(default_factory=list)
+    skills: list[str] = field(default_factory=list)
+    work_activities: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class CareerDiscoveryOutput:
+    suggested_roles: list[SuggestedRole] = field(default_factory=list)
+    selected_target_role: str = ""
+    career_discovery_notes: str = ""
+    onet_reference: OnetReference = field(default_factory=lambda: OnetReference(used=False))
+
+
+@dataclass(frozen=True)
 class MissionReport:
     input: MissionInput
     resume: ResumeOutput
     job_fit: JobFitOutput
     evaluation: EvaluationOutput
     mode: str
+    workflow_mode: WorkflowMode = "targeted"
+    discovery: CareerDiscoveryOutput | None = None
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
