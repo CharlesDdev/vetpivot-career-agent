@@ -52,6 +52,21 @@ def test_live_resume_agent_parses_mocked_gemini_response():
     assert result.ats_optimized_bullet == "Leadership, equipment maintenance, safety, and operations coordination."
 
 
+def test_live_resume_agent_strips_unsupported_numeric_claims():
+    def generator(_: str, __: str) -> dict[str, object]:
+        return {
+            "professional_resume_bullet": "Led a 12-person team maintaining $2.3M in equipment.",
+            "ats_optimized_bullet": "Maintained $2.3M in equipment and achieved 100% operational readiness.",
+        }
+
+    result = run_live_resume_agent(sample_input(), generator=generator)
+
+    assert "12" in result.professional_resume_bullet
+    assert "$2.3M" in result.professional_resume_bullet
+    assert "$2.3M" in result.ats_optimized_bullet
+    assert "100%" not in result.ats_optimized_bullet
+
+
 def test_live_job_fit_agent_parses_mocked_gemini_response():
     resume = ResumeOutput(
         professional_resume_bullet="Led a 12-person equipment maintenance team supporting operations.",
@@ -63,6 +78,34 @@ def test_live_job_fit_agent_parses_mocked_gemini_response():
     assert result.fit_label == "Strong Match"
     assert result.missing_keywords == []
     assert any(point.startswith("S - Situation:") for point in result.interview_talking_points)
+
+
+def test_live_job_fit_agent_sanitizes_unsupported_star_metrics():
+    def generator(_: str, __: str) -> dict[str, object]:
+        return {
+            "fit_label": "Strong Match",
+            "match_analysis": "Strong Match: aligned.",
+            "matched_keywords": ["maintenance"],
+            "missing_keywords": [],
+            "interview_talking_points": [
+                "Situation: Managed $2.3M in equipment. Task: Ensure 100% operational readiness. Action: Led a 12-person team. Result: Maintained zero downtime and improved turnaround by [X]%.",
+            ],
+        }
+
+    resume = ResumeOutput(
+        professional_resume_bullet="Led a 12-person equipment maintenance team.",
+        ats_optimized_bullet="Maintained $2.3M in equipment.",
+    )
+
+    result = run_live_job_fit_agent(sample_input(), resume, generator=generator)
+    talking_point = result.interview_talking_points[0]
+
+    assert "$2.3M" in talking_point
+    assert "12-person" in talking_point
+    assert "100%" not in talking_point
+    assert "[X]%" not in talking_point
+    assert "zero downtime" not in talking_point
+    assert "share only verified outcomes" in talking_point
 
 
 def test_live_job_fit_agent_rejects_invalid_label():

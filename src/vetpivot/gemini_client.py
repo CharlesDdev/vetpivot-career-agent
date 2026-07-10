@@ -60,17 +60,21 @@ class GeminiClient:
             raise GeminiUnavailableError("google-genai is not installed. Install live dependencies with: pip install -e .[live]") from exc
 
         try:
+            from google.genai import types
+
             client = genai.Client(api_key=self.api_key)
-            interaction = client.interactions.create(
+            response = client.models.generate_content(
                 model=self.model,
-                system_instruction=system_instruction,
-                input=prompt,
-                generation_config={"temperature": 0.2},
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    systemInstruction=system_instruction,
+                    temperature=0.2,
+                ),
             )
         except Exception as exc:  # pragma: no cover - network/API dependent
             raise GeminiUnavailableError(f"Gemini request failed: {exc}") from exc
 
-        output_text = getattr(interaction, "output_text", "")
+        output_text = getattr(response, "text", "")
         if not isinstance(output_text, str) or not output_text.strip():
             raise GeminiUnavailableError("Gemini returned an empty response.")
         return output_text.strip()

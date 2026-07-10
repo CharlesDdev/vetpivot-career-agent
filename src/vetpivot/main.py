@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
+from vetpivot.gemini_client import GeminiUnavailableError
 from vetpivot.orchestrator import run_workflow
 from vetpivot.schemas import MissionInput, MissionReport
 
@@ -26,14 +28,19 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> None:
+def main() -> int:
     args = build_parser().parse_args()
-    result = run_workflow(_load_input(args.input), mode=args.mode)
+    try:
+        result = run_workflow(_load_input(args.input), mode=args.mode)
+    except GeminiUnavailableError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     if isinstance(result, MissionReport):
         print(json.dumps(result.to_dict(), indent=2))
     else:
         print(result)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

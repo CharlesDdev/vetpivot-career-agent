@@ -208,6 +208,12 @@ Endpoint:
 POST /api/career-agent
 ```
 
+Frontend compatibility endpoint:
+
+```text
+POST /api/translate
+```
+
 Health check:
 
 ```text
@@ -240,6 +246,26 @@ Response fields:
 - `mode`
 
 The API defaults to deterministic `mock` mode. It also accepts `mode: "live"` and `mode: "auto"` without changing the response shape used by the frontend.
+
+The compatibility endpoint accepts the older simple frontend request shape:
+
+```bash
+curl -sS -X POST http://127.0.0.1:8000/api/translate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Led a team of 12 soldiers maintaining communications equipment valued at $2.3M.",
+    "mode": "mock"
+  }'
+```
+
+It returns:
+
+```json
+{
+  "translation": "Translated resume bullet...",
+  "mode": "mock"
+}
+```
 
 ## Cloud Run Deployment Prep
 

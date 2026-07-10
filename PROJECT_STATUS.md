@@ -20,20 +20,24 @@
 - Saved deterministic mock outputs for all three demo cases
 - Added `KAGGLE_SUBMISSION_DRAFT.md`
 - Implemented Mission 4 FastAPI bridge at `POST /api/career-agent`
+- Added frontend compatibility endpoint at `POST /api/translate`
 - Added API endpoint tests
 - Preserved existing CLI behavior
 - Added offline Kaggle notebook walkthrough at `notebooks/vetpivot_career_agent_demo.ipynb`
+- Validated optional Gemini and Google ADK packages are importable in the local environment
+- Improved live CLI failure handling when Gemini credentials are missing
 
 ## In Progress
 
+- Validate the frontend compatibility API against the deployed VetPivot frontend configuration
 - Validate backend calls in local Python environment with a working SSL trust store
-- Validate live Google ADK mode after credentials and optional dependencies are configured
+- Validate live Gemini and Google ADK execution after credentials are configured
 
 ## Remaining
 
-- Connect the existing VetPivot frontend to the API bridge when ready
+- Point the existing VetPivot frontend at the Career Agent API after direct API smoke tests pass
 - Run the backend-backed CLI/API demo in an environment with working certificate trust
-- Run live Google ADK execution with Gemini credentials if needed for final submission
+- Run live Gemini/API/ADK execution with credentials
 - Refine agent prompts after reviewing live model behavior
 - Expand evaluation cases after capstone review feedback
 
@@ -46,8 +50,8 @@
 - Resume output must avoid inventing credentials, metrics, degrees, job titles, or experience
 - Fit analysis must avoid overstating readiness for a target role
 - Saved mock outputs may need regeneration if deterministic logic changes
-- API response contract may need adjustment when wired to the existing frontend
+- The frontend may still require a Firebase Hosting rewrite or environment-variable update outside this repo
 
 ## Next Recommended Step
 
-Open `notebooks/vetpivot_career_agent_demo.ipynb` and review the walkthrough for final Kaggle submission polish.
+Configure `GEMINI_API_KEY` or `GOOGLE_API_KEY`, then run live Gemini/API/ADK smoke tests.

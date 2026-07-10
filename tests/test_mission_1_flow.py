@@ -1,5 +1,6 @@
 from vetpivot.orchestrator import run_workflow
 from vetpivot.schemas import MissionInput, MissionReport
+from vetpivot import main as cli_main
 
 
 def sample_input() -> MissionInput:
@@ -40,3 +41,20 @@ def test_auto_falls_back_to_mock_without_live_setup(monkeypatch):
 
     assert isinstance(result, MissionReport)
     assert result.mode == "mock"
+
+
+def test_cli_live_mode_reports_missing_credentials_without_traceback(monkeypatch, capsys):
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_APPLICATION_CREDENTIALS", raising=False)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["vetpivot", "--mode", "live", "--input", "examples/strong_match.json"],
+    )
+
+    exit_code = cli_main.main()
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "Gemini live mode requires GEMINI_API_KEY or GOOGLE_API_KEY." in captured.err
+    assert "Traceback" not in captured.err

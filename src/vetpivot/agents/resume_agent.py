@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 
 from vetpivot.gemini_client import GeminiGenerator, GeminiUnavailableError, generate_json
@@ -13,9 +14,12 @@ Translator = Callable[[str], str]
 
 RESUME_LIVE_SYSTEM_INSTRUCTION = (
     "You are the VetPivot Resume Agent. Translate military experience into truthful civilian resume language. "
-    "Do not invent facts, metrics, credentials, tools, certifications, degrees, job titles, or years of experience. "
+    "Do not invent facts, metrics, percentages, outcomes, credentials, tools, certifications, degrees, job titles, or years of experience. "
+    "Use only numbers and measurable outcomes explicitly present in the input. "
     "Return only valid JSON with keys professional_resume_bullet and ats_optimized_bullet."
 )
+
+NUMERIC_TOKEN_REGEX = re.compile(r"\$?\d[\d,]*(?:\.\d+)?(?:%|[kKmMbB])?")
 
 
 def _require_text(payload: dict[str, object], key: str) -> str:
@@ -23,6 +27,20 @@ def _require_text(payload: dict[str, object], key: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise GeminiUnavailableError(f"Gemini resume response missing usable {key}.")
     return value.strip()
+
+
+def _sanitize_unsupported_numbers(text: str, source_text: str) -> str:
+    allowed_tokens = {
+        token.lower().replace(",", "")
+        for token in NUMERIC_TOKEN_REGEX.findall(source_text)
+    }
+
+    def replacement(match: re.Match[str]) -> str:
+        token = match.group(0)
+        normalized = token.lower().replace(",", "")
+        return token if normalized in allowed_tokens else ""
+
+    return re.sub(r"\s{2,}", " ", NUMERIC_TOKEN_REGEX.sub(replacement, text)).strip()
 
 
 def run_mock_resume_agent(data: MissionInput) -> ResumeOutput:
@@ -69,8 +87,14 @@ def run_live_resume_agent(data: MissionInput, generator: GeminiGenerator = gener
     )
     payload = generator(RESUME_LIVE_SYSTEM_INSTRUCTION, prompt)
     return ResumeOutput(
-        professional_resume_bullet=_require_text(payload, "professional_resume_bullet"),
-        ats_optimized_bullet=_require_text(payload, "ats_optimized_bullet"),
+        professional_resume_bullet=_sanitize_unsupported_numbers(
+            _require_text(payload, "professional_resume_bullet"),
+            data.military_experience,
+        ),
+        ats_optimized_bullet=_sanitize_unsupported_numbers(
+            _require_text(payload, "ats_optimized_bullet"),
+            data.military_experience,
+        ),
     )
 
 

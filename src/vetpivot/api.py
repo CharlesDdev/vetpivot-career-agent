@@ -40,6 +40,16 @@ class CareerAgentResponse(BaseModel):
     onet_reference: dict[str, Any] = Field(default_factory=dict)
 
 
+class TranslateRequest(BaseModel):
+    text: str = Field(..., min_length=1)
+    mode: ApiMode = "mock"
+
+
+class TranslateResponse(BaseModel):
+    translation: str
+    mode: str
+
+
 app = FastAPI(
     title="VetPivot Career Agent API",
     description="API bridge for the VetPivot Career Agent CLI/orchestrator workflow.",
@@ -75,6 +85,25 @@ def health() -> dict[str, str]:
 
 @app.post("/api/career-agent", response_model=CareerAgentResponse)
 def career_agent(request: CareerAgentRequest) -> CareerAgentResponse:
+    report = _run_career_agent(request)
+    return _to_career_agent_response(report)
+
+
+@app.post("/api/translate", response_model=TranslateResponse)
+def translate(request: TranslateRequest) -> TranslateResponse:
+    career_request = CareerAgentRequest(
+        military_experience=request.text,
+        target_job_description="Civilian resume translation for a veteran career transition.",
+        mode=request.mode,
+    )
+    report = _run_career_agent(career_request)
+    return TranslateResponse(
+        translation=report.resume.professional_resume_bullet,
+        mode=report.mode,
+    )
+
+
+def _run_career_agent(request: CareerAgentRequest) -> MissionReport:
     mission_input = MissionInput(
         military_experience=request.military_experience,
         mos_branch=request.mos_branch,
@@ -90,6 +119,10 @@ def career_agent(request: CareerAgentRequest) -> CareerAgentResponse:
     if not isinstance(report, MissionReport):
         raise HTTPException(status_code=500, detail="Career agent did not return a structured report")
 
+    return report
+
+
+def _to_career_agent_response(report: MissionReport) -> CareerAgentResponse:
     discovery = report.discovery
     return CareerAgentResponse(
         professional_resume_bullet=report.resume.professional_resume_bullet,

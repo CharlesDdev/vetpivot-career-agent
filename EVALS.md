@@ -219,10 +219,11 @@ Expected behavior:
 
 - `mode="live"` fails clearly
 - It does not silently fall back to mock
+- CLI live mode reports missing credentials without a Python traceback
 
 Pass/fail notes:
 
-- Covered by `tests/test_live_workflow.py`
+- Covered by `tests/test_live_workflow.py` and `tests/test_mission_1_flow.py`
 
 ### Case 13: Auto Fallback
 
@@ -259,6 +260,7 @@ Before calling capstone evidence ready:
 API bridge success criteria:
 
 - `POST /api/career-agent` accepts military experience, optional MOS/branch, and target job description.
+- `POST /api/translate` accepts the older frontend-compatible `{ "text": "..." }` request shape.
 - API response exposes resume bullets, job-fit assessment, missing keywords, interview talking points, evaluation notes, safety flags, unsupported claims, and mode metadata.
 - Default API mode is deterministic/offline mock.
 - Existing CLI behavior remains unchanged.
@@ -271,7 +273,9 @@ API tests:
 - Explicit live mode is accepted and preserves the response shape.
 - Unavailable live mode returns a clear error.
 - Missing `military_experience` returns validation error.
-- Missing `target_job_description` returns validation error.
+- Missing `target_job_description` uses discovery mode.
+- Frontend-compatible translate request returns `translation` and `mode`.
+- Missing translate `text` returns validation error.
 
 ## Kaggle Notebook Walkthrough Evaluation
 

@@ -113,3 +113,19 @@ Relying only on README documentation or requiring live backend/API execution.
 The notebook is reproducible and judge-friendly, but it demonstrates mock-mode behavior rather than live Gemini/backend behavior.
 
 **Status:** Accepted
+
+### 2026-07-10 - Add Frontend-Compatible Translate Endpoint
+
+**Decision:**
+Add `POST /api/translate` as a thin compatibility adapter over the existing Career Agent workflow.
+
+**Why:**
+The repo does not contain frontend source, but the existing VetPivot frontend/backend contract uses a simple translation request shape. Adding a small adapter lets the deployed frontend call this service without replacing the structured `/api/career-agent` endpoint.
+
+**Alternatives considered:**
+Building a frontend in this repo, changing the existing `/api/career-agent` contract, or deploying before local smoke tests.
+
+**Tradeoffs:**
+The compatibility endpoint returns only `translation` and `mode`, so richer career-agent fields remain available through `/api/career-agent`.
+
+**Status:** Accepted

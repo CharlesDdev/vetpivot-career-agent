@@ -49,30 +49,42 @@ def test_get_gemini_model_uses_env_override(monkeypatch):
 
 
 def test_gemini_client_generate_json_uses_text_output(monkeypatch):
-    class FakeInteraction:
-        output_text = '{"safety_flags": ["No obvious issue."]}'
+    class FakeResponse:
+        text = '{"safety_flags": ["No obvious issue."]}'
 
-    class FakeInteractions:
-        def create(self, **kwargs):
+    class FakeModels:
+        def generate_content(self, **kwargs):
             assert kwargs["model"] == "gemini-test-model"
-            assert kwargs["system_instruction"] == "system"
-            assert kwargs["input"] == "prompt"
-            return FakeInteraction()
+            assert kwargs["contents"] == "prompt"
+            assert kwargs["config"].system_instruction == "system"
+            assert kwargs["config"].temperature == 0.2
+            return FakeResponse()
 
     class FakeGenAIClient:
         def __init__(self, api_key):
             assert api_key == "test-key"
-            self.interactions = FakeInteractions()
+            self.models = FakeModels()
+
+    class FakeGenerateContentConfig:
+        def __init__(self, *, systemInstruction, temperature):
+            self.system_instruction = systemInstruction
+            self.temperature = temperature
 
     class FakeGenAI:
         Client = FakeGenAIClient
+
+    class FakeTypes:
+        GenerateContentConfig = FakeGenerateContentConfig
 
     import sys
     import types
 
     google_module = types.ModuleType("google")
     google_module.genai = FakeGenAI
+    google_genai_module = types.ModuleType("google.genai")
+    google_genai_module.types = FakeTypes
     monkeypatch.setitem(sys.modules, "google", google_module)
+    monkeypatch.setitem(sys.modules, "google.genai", google_genai_module)
 
     result = GeminiClient(api_key="test-key", model="gemini-test-model").generate_json(
         system_instruction="system",

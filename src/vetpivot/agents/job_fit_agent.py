@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 from vetpivot.gemini_client import GeminiGenerator, GeminiUnavailableError, generate_json
 from vetpivot.schemas import JobFitOutput, MissionInput, ResumeOutput
@@ -29,9 +30,14 @@ KEYWORD_BANK = [
 JOB_FIT_LIVE_SYSTEM_INSTRUCTION = (
     "You are the VetPivot Job Fit Agent. Compare the supplied experience and resume bullets to the target job. "
     "Use only these fit labels: Strong Match, Partial Match, Weak Match. Do not use numeric scoring. "
+    "Do not invent metrics, percentages, outcomes, downtime, readiness rates, credentials, or tools. "
+    "For STAR Result guidance, tell the user to provide only verified outcomes from their own records if no result was supplied. "
     "Return only valid JSON with keys fit_label, match_analysis, matched_keywords, missing_keywords, "
     "and interview_talking_points. Interview talking points must include STAR guidance."
 )
+
+NUMERIC_TOKEN_REGEX = re.compile(r"\$?\d[\d,]*(?:\.\d+)?(?:%|[kKmMbB])?")
+SAFE_RESULT_GUIDANCE = "share only verified outcomes or metrics from your own records; do not add numbers that were not provided."
 
 
 def _job_keywords(job_description: str) -> list[str]:
@@ -99,6 +105,29 @@ def _require_text_list(payload: dict[str, object], key: str) -> list[str]:
     return [item.strip() for item in value]
 
 
+def _strip_unsupported_numbers(text: str, source_text: str) -> str:
+    allowed_tokens = {
+        token.lower().replace(",", "")
+        for token in NUMERIC_TOKEN_REGEX.findall(source_text)
+    }
+
+    def replacement(match: re.Match[str]) -> str:
+        token = match.group(0)
+        normalized = token.lower().replace(",", "")
+        return token if normalized in allowed_tokens else ""
+
+    return re.sub(r"\s{2,}", " ", NUMERIC_TOKEN_REGEX.sub(replacement, text)).strip()
+
+
+def _sanitize_interview_talking_points(points: list[str], source_text: str) -> list[str]:
+    sanitized = []
+    result_pattern = re.compile(r"(\b(?:R\s*-\s*)?Result:\s*)(.*?)(?=$)", re.IGNORECASE)
+    for point in points:
+        without_unsupported_numbers = _strip_unsupported_numbers(point, source_text)
+        sanitized.append(result_pattern.sub(rf"\1{SAFE_RESULT_GUIDANCE}", without_unsupported_numbers))
+    return sanitized
+
+
 def run_live_job_fit_agent(data: MissionInput, resume: ResumeOutput, generator: GeminiGenerator = generate_json) -> JobFitOutput:
     """Use Gemini to produce structured job-fit analysis."""
     prompt = json.dumps(
@@ -130,5 +159,15 @@ def run_live_job_fit_agent(data: MissionInput, resume: ResumeOutput, generator: 
         match_analysis=_require_text(payload, "match_analysis"),
         matched_keywords=_require_text_list(payload, "matched_keywords"),
         missing_keywords=_require_text_list(payload, "missing_keywords"),
-        interview_talking_points=_require_text_list(payload, "interview_talking_points"),
+        interview_talking_points=_sanitize_interview_talking_points(
+            _require_text_list(payload, "interview_talking_points"),
+            " ".join(
+                [
+                    data.military_experience,
+                    data.mos_branch,
+                    resume.professional_resume_bullet,
+                    resume.ats_optimized_bullet,
+                ]
+            ),
+        ),
     )

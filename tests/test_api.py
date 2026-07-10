@@ -39,6 +39,22 @@ def test_health_endpoint_returns_ok_status():
     assert response.json() == {"status": "ok"}
 
 
+def test_translate_endpoint_returns_frontend_compatible_translation():
+    response = client.post("/api/translate", json={"text": valid_payload()["military_experience"]})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert set(body) == {"translation", "mode"}
+    assert body["translation"]
+    assert body["mode"] == "mock"
+
+
+def test_translate_endpoint_requires_text():
+    response = client.post("/api/translate", json={})
+
+    assert response.status_code == 422
+
+
 def test_career_agent_endpoint_accepts_explicit_mock_mode():
     payload = valid_payload()
     payload["mode"] = "mock"
@@ -113,6 +129,22 @@ def test_career_agent_endpoint_returns_503_when_live_unavailable(monkeypatch):
     payload["mode"] = "live"
 
     response = client.post("/api/career-agent", json=payload)
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Gemini unavailable"}
+
+
+def test_translate_endpoint_returns_503_when_live_unavailable(monkeypatch):
+    def fake_run_workflow(_: MissionInput, mode: str):
+        assert mode == "live"
+        raise GeminiUnavailableError("Gemini unavailable")
+
+    monkeypatch.setattr("vetpivot.api.run_workflow", fake_run_workflow)
+
+    response = client.post(
+        "/api/translate",
+        json={"text": valid_payload()["military_experience"], "mode": "live"},
+    )
 
     assert response.status_code == 503
     assert response.json() == {"detail": "Gemini unavailable"}
