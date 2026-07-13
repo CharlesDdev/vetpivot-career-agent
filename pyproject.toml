@@ -11,6 +11,7 @@ live = ["google-adk", "google-genai"]
 
 [project.scripts]
 vetpivot = "vetpivot.main:main"
+vetpivot-live-smoke = "vetpivot.live_smoke:main"
 
 [build-system]
 requires = ["setuptools>=68"]

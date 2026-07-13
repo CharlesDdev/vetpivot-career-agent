@@ -2,15 +2,31 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 import os
 import uuid
+from typing import Any
 
 from vetpivot.schemas import MissionInput
 
 
 def credentials_available() -> bool:
     return bool(os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+
+
+def _create_session(session_service: Any, *, app_name: str, user_id: str, session_id: str) -> None:
+    result = session_service.create_session(app_name=app_name, user_id=user_id, session_id=session_id)
+    if inspect.isawaitable(result):
+        import asyncio
+
+        asyncio.run(result)
+
+
+async def _create_session_async(session_service: Any, *, app_name: str, user_id: str, session_id: str) -> None:
+    result = session_service.create_session(app_name=app_name, user_id=user_id, session_id=session_id)
+    if inspect.isawaitable(result):
+        await result
 
 
 def run_live_adk(data: MissionInput) -> str:
@@ -27,19 +43,25 @@ def run_live_adk(data: MissionInput) -> str:
 
     from vetpivot.adk_agents import build_root_agent
 
-    app_name = "vetpivot_career_agent"
-    user_id = "mission_1_cli"
-    session_id = str(uuid.uuid4())
-    session_service = InMemorySessionService()
-    session_service.create_session(app_name=app_name, user_id=user_id, session_id=session_id)
-    runner = Runner(agent=build_root_agent(), app_name=app_name, session_service=session_service)
-    prompt = json.dumps(data.__dict__, indent=2)
-    message = types.Content(role="user", parts=[types.Part(text=prompt)])
+    async def _run() -> str:
+        app_name = "vetpivot_career_agent"
+        user_id = "mission_1_cli"
+        session_id = str(uuid.uuid4())
+        session_service = InMemorySessionService()
+        await _create_session_async(session_service, app_name=app_name, user_id=user_id, session_id=session_id)
+        runner = Runner(agent=build_root_agent(), app_name=app_name, session_service=session_service)
+        prompt = json.dumps(data.__dict__, indent=2)
+        message = types.Content(role="user", parts=[types.Part(text=prompt)])
 
-    final_text = ""
-    for event in runner.run(user_id=user_id, session_id=session_id, new_message=message):
-        if event.is_final_response() and event.content and event.content.parts:
-            final_text = event.content.parts[0].text or ""
+        final_text = ""
+        async for event in runner.run_async(user_id=user_id, session_id=session_id, new_message=message):
+            if event.is_final_response() and event.content and event.content.parts:
+                final_text = event.content.parts[0].text or ""
+        return final_text
+
+    import asyncio
+
+    final_text = asyncio.run(_run())
     if not final_text:
         raise RuntimeError("Google ADK did not return a final response.")
     return final_text

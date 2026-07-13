@@ -24,20 +24,21 @@
 - Added API endpoint tests
 - Preserved existing CLI behavior
 - Added offline Kaggle notebook walkthrough at `notebooks/vetpivot_career_agent_demo.ipynb`
-- Validated optional Gemini and Google ADK packages are importable in the local environment
+- Validated `google.genai` is importable in the current base shell; `google.adk` still requires the live dependency environment
 - Improved live CLI failure handling when Gemini credentials are missing
+- Added `vetpivot.live_smoke` for credential-gated Gemini/API/ADK smoke checks
+- Validated live Gemini workflow, live `/api/translate`, and Google ADK runner via `PYTHONPATH=src python3 -m vetpivot.live_smoke` in a credentialed terminal on 2026-07-13
+- Fixed Google ADK live compatibility issues for async session creation, stale default model selection, and runtime tool annotations
 
 ## In Progress
 
 - Validate the frontend compatibility API against the deployed VetPivot frontend configuration
 - Validate backend calls in local Python environment with a working SSL trust store
-- Validate live Gemini and Google ADK execution after credentials are configured
 
 ## Remaining
 
 - Point the existing VetPivot frontend at the Career Agent API after direct API smoke tests pass
 - Run the backend-backed CLI/API demo in an environment with working certificate trust
-- Run live Gemini/API/ADK execution with credentials
 - Refine agent prompts after reviewing live model behavior
 - Expand evaluation cases after capstone review feedback
 
@@ -54,4 +55,4 @@
 
 ## Next Recommended Step
 
-Configure `GEMINI_API_KEY` or `GOOGLE_API_KEY`, then run live Gemini/API/ADK smoke tests.
+Validate the deployed frontend configuration against the Career Agent API compatibility endpoint.

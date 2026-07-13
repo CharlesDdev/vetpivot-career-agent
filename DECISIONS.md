@@ -129,3 +129,35 @@ Building a frontend in this repo, changing the existing `/api/career-agent` cont
 The compatibility endpoint returns only `translation` and `mode`, so richer career-agent fields remain available through `/api/career-agent`.
 
 **Status:** Accepted
+
+### 2026-07-13 - Add Credential-Gated Live Smoke Helper
+
+**Decision:**
+Add `vetpivot.live_smoke` as a local validation helper for Gemini workflow, API live mode, and Google ADK runner checks.
+
+**Why:**
+Live validation depends on external credentials and network-backed model calls. A dedicated helper makes readiness visible, avoids printing secret values, and gives the project one command to run after credentials are configured.
+
+**Alternatives considered:**
+Leaving live checks as scattered README commands, running live calls inside the normal test suite, or committing credentials for repeatability.
+
+**Tradeoffs:**
+The helper improves operational clarity, but credentialed live behavior still must be run manually because tests should remain offline and deterministic.
+
+**Status:** Accepted
+
+### 2026-07-13 - Keep ADK Live Path Compatible With Installed Google ADK
+
+**Decision:**
+Update the Google ADK live runner to support async session creation, use the shared Gemini model configuration, and expose runtime function-tool annotations.
+
+**Why:**
+Credentialed live smoke testing showed that the installed Google ADK package requires awaited session creation, rejects stale unavailable model names, and cannot parse stringified tool annotations for automatic function calling.
+
+**Alternatives considered:**
+Skipping the ADK smoke check, pinning only older dependencies, or maintaining a separate ADK-only model default.
+
+**Tradeoffs:**
+The ADK path is now more aligned with the working Gemini API path, but live ADK behavior still depends on external Google package and model availability.
+
+**Status:** Accepted

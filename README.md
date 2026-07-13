@@ -119,6 +119,20 @@ Run auto fallback mode:
 PYTHONPATH=src python3 -m vetpivot.main --mode auto --input examples/strong_match.json
 ```
 
+Check live readiness without making live calls:
+
+```bash
+PYTHONPATH=src python3 -m vetpivot.live_smoke --readiness-only
+```
+
+Run Gemini/API/ADK live smoke checks after credentials are configured:
+
+```bash
+PYTHONPATH=src python3 -m vetpivot.live_smoke
+```
+
+The live smoke command prints whether the relevant environment variables are set, but it does not print secret values. Exit code `2` means live credentials are missing, not that the code path failed.
+
 The older VetPivot backend translation helper remains in `src/vetpivot/tools/vetpivot_translate_tool.py` for tool-use evidence and backend-specific tests, but the primary live workflow now runs the three Career Agent roles through Gemini.
 
 ## Google ADK Alignment

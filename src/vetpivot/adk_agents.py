@@ -6,11 +6,8 @@ objects only when credentials and the google-adk package are available.
 
 from __future__ import annotations
 
-import os
-
+from vetpivot.gemini_client import get_gemini_model
 from vetpivot.tools.vetpivot_translate_tool import vetpivot_translate
-
-DEFAULT_MODEL = os.getenv("VETPIVOT_GEMINI_MODEL", "gemini-2.0-flash-lite")
 
 try:
     from google.adk.agents.llm_agent import Agent
@@ -53,11 +50,15 @@ def _require_adk() -> None:
         raise RuntimeError("Google ADK is not installed. Install with: pip install -e .[live]")
 
 
+def get_adk_model() -> str:
+    return get_gemini_model()
+
+
 def build_resume_agent():
     _require_adk()
     return Agent(
         name="resume_agent",
-        model=DEFAULT_MODEL,
+        model=get_adk_model(),
         description="Translates military experience into civilian resume bullets.",
         instruction=RESUME_AGENT_INSTRUCTION,
         tools=[vetpivot_translate],
@@ -68,7 +69,7 @@ def build_job_fit_agent():
     _require_adk()
     return Agent(
         name="job_fit_agent",
-        model=DEFAULT_MODEL,
+        model=get_adk_model(),
         description="Evaluates fit against a target civilian job description.",
         instruction=JOB_FIT_AGENT_INSTRUCTION,
     )
@@ -78,7 +79,7 @@ def build_evaluation_agent():
     _require_adk()
     return Agent(
         name="evaluation_agent",
-        model=DEFAULT_MODEL,
+        model=get_adk_model(),
         description="Reviews output for accuracy, usefulness, and safety.",
         instruction=EVALUATION_AGENT_INSTRUCTION,
     )
@@ -88,7 +89,7 @@ def build_root_agent():
     _require_adk()
     return Agent(
         name="vetpivot_career_agent",
-        model=DEFAULT_MODEL,
+        model=get_adk_model(),
         description="Coordinates VetPivot Mission 1 resume translation, job fit, and evaluation agents.",
         instruction=ROOT_AGENT_INSTRUCTION,
         sub_agents=[build_resume_agent(), build_job_fit_agent(), build_evaluation_agent()],

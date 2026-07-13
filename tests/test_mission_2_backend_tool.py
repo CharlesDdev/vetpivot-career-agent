@@ -79,6 +79,10 @@ def test_adk_translation_tool_returns_structured_success(monkeypatch):
     assert result == {"status": "success", "translation": "Civilian translation."}
 
 
+def test_adk_translation_tool_uses_runtime_type_annotations():
+    assert vetpivot_translate.__annotations__["text"] is str
+
+
 def test_adk_translation_tool_returns_structured_error(monkeypatch):
     def failing_translate(_: str) -> str:
         raise VetPivotTranslateError("backend unavailable")

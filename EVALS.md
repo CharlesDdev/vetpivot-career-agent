@@ -240,6 +240,25 @@ Pass/fail notes:
 
 - Covered by `tests/test_live_workflow.py`
 
+### Case 14: Live Smoke Readiness
+
+Input:
+
+- Local environment with or without Gemini credentials
+
+Expected behavior:
+
+- Readiness check reports optional dependency availability and whether credential env vars are set
+- Secret values are not printed
+- Missing live credentials return exit code `2` before network-backed checks run
+- When credentials are configured, the smoke command runs Gemini workflow, `/api/translate` in live mode, and Google ADK runner checks
+
+Pass/fail notes:
+
+- No-credential behavior covered by `tests/test_live_smoke.py`
+- Credentialed live behavior passed on 2026-07-13 with `PYTHONPATH=src python3 -m vetpivot.live_smoke`
+- The credentialed run validated the Gemini workflow, live `/api/translate`, and Google ADK runner
+
 ## Manual Review Checklist
 
 Before calling capstone evidence ready:
