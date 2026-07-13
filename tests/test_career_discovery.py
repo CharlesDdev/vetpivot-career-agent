@@ -1,9 +1,9 @@
 import pytest
 
-from vetpivot.agents.career_discovery_agent import run_live_career_discovery_agent
+from vetpivot.agents.career_discovery_agent import discovery_target_description, run_live_career_discovery_agent
 from vetpivot.gemini_client import GeminiUnavailableError
 from vetpivot.orchestrator import run_workflow
-from vetpivot.schemas import MissionInput, MissionReport
+from vetpivot.schemas import CareerDiscoveryOutput, MissionInput, MissionReport, SuggestedRole
 from vetpivot.tools.onet_tool import OnetCareerData, OnetOccupation, OnetUnavailableError
 
 
@@ -169,3 +169,26 @@ def test_live_discovery_rejects_unusable_gemini_roles():
 
     with pytest.raises(GeminiUnavailableError, match="suggested roles"):
         run_live_career_discovery_agent(discovery_input(), generator=invalid_generator, onet_search=onet_success)
+
+
+def test_discovery_target_description_falls_back_to_first_suggested_role():
+    discovery = CareerDiscoveryOutput(
+        suggested_roles=[
+            SuggestedRole(
+                title="Transportation Dispatcher",
+                explanation="Transfers convoy coordination and risk monitoring.",
+            )
+        ],
+        selected_target_role="",
+        career_discovery_notes="test",
+    )
+
+    description = discovery_target_description(discovery)
+
+    assert description == "Transportation Dispatcher: Transfers convoy coordination and risk monitoring."
+
+
+def test_discovery_target_description_returns_empty_when_no_target_context():
+    discovery = CareerDiscoveryOutput(career_discovery_notes="test")
+
+    assert discovery_target_description(discovery) == ""

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 
+from vetpivot.agents.live_validation import require_text, require_text_list
 from vetpivot.gemini_client import GeminiGenerator, GeminiUnavailableError, generate_json
 from vetpivot.schemas import EvaluationOutput, JobFitOutput, MissionInput, ResumeOutput
 
@@ -136,20 +137,6 @@ def run_evaluation_agent(data: MissionInput, resume: ResumeOutput, job_fit: JobF
     )
 
 
-def _require_text(payload: dict[str, object], key: str) -> str:
-    value = payload.get(key)
-    if not isinstance(value, str) or not value.strip():
-        raise GeminiUnavailableError(f"Gemini evaluation response missing usable {key}.")
-    return value.strip()
-
-
-def _require_text_list(payload: dict[str, object], key: str) -> list[str]:
-    value = payload.get(key)
-    if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
-        raise GeminiUnavailableError(f"Gemini evaluation response missing usable {key}.")
-    return [item.strip() for item in value]
-
-
 def run_live_evaluation_agent(
     data: MissionInput,
     resume: ResumeOutput,
@@ -184,8 +171,8 @@ def run_live_evaluation_agent(
     )
     payload = generator(EVALUATION_LIVE_SYSTEM_INSTRUCTION, prompt)
     return EvaluationOutput(
-        accuracy_notes=_require_text(payload, "accuracy_notes"),
-        safety_flags=_require_text_list(payload, "safety_flags"),
-        unsupported_claims=_require_text_list(payload, "unsupported_claims"),
-        usefulness_notes=_require_text(payload, "usefulness_notes"),
+        accuracy_notes=require_text(payload, "accuracy_notes", context="evaluation"),
+        safety_flags=require_text_list(payload, "safety_flags", context="evaluation"),
+        unsupported_claims=require_text_list(payload, "unsupported_claims", context="evaluation"),
+        usefulness_notes=require_text(payload, "usefulness_notes", context="evaluation"),
     )

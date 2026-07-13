@@ -55,6 +55,36 @@ def test_translate_endpoint_requires_text():
     assert response.status_code == 422
 
 
+def test_translate_endpoint_accepts_live_mode(monkeypatch):
+    def fake_run_workflow(mission_input: MissionInput, mode: str):
+        assert mode == "live"
+        return MissionReport(
+            input=mission_input,
+            resume=ResumeOutput(
+                professional_resume_bullet="Live translated bullet.",
+                ats_optimized_bullet="Live ATS bullet.",
+            ),
+            job_fit=JobFitOutput(
+                fit_label="Partial Match",
+                match_analysis="Partial Match: Live analysis.",
+            ),
+            evaluation=EvaluationOutput(
+                accuracy_notes="Live evaluation notes.",
+            ),
+            mode="live",
+        )
+
+    monkeypatch.setattr("vetpivot.api.run_workflow", fake_run_workflow)
+
+    response = client.post(
+        "/api/translate",
+        json={"text": valid_payload()["military_experience"], "mode": "live"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"translation": "Live translated bullet.", "mode": "live"}
+
+
 def test_career_agent_endpoint_accepts_explicit_mock_mode():
     payload = valid_payload()
     payload["mode"] = "mock"

@@ -1,4 +1,5 @@
 import json
+import socket
 
 import pytest
 
@@ -90,3 +91,15 @@ def test_onet_search_supports_legacy_basic_auth(monkeypatch):
     result = search_career_data("convoy operations", "88M")
 
     assert result.occupations == []
+
+
+def test_onet_search_converts_socket_timeout_to_unavailable(monkeypatch):
+    monkeypatch.setenv("ONET_API_KEY", "test-api-key")
+
+    def fake_urlopen(request, timeout):
+        raise socket.timeout("timed out")
+
+    monkeypatch.setattr(onet_tool, "urlopen", fake_urlopen)
+
+    with pytest.raises(OnetUnavailableError, match="timed out"):
+        search_career_data("convoy operations", "88M")

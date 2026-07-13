@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import socket
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -31,28 +32,34 @@ class OnetCareerData:
     work_activities: list[str] = field(default_factory=list)
 
 
-def _api_key() -> str:
-    key = os.getenv("ONET_API_KEY") or os.getenv("ONET_KEY")
-    if not key or not key.strip():
-        raise OnetUnavailableError("O*NET API key is not configured.")
-    return key.strip()
+@dataclass(frozen=True)
+class OnetAuthConfig:
+    mode: str
+    api_key: str = ""
+    username: str = ""
+    password: str = ""
 
 
-def _basic_credentials() -> tuple[str, str]:
-    username = os.getenv("ONET_USERNAME") or os.getenv("ONET_USER")
-    password = os.getenv("ONET_PASSWORD") or os.getenv("ONET_PASS")
-    if not username or not password:
-        raise OnetUnavailableError("O*NET credentials are not configured.")
-    return username, password
+def _auth_config() -> OnetAuthConfig:
+    api_key = (os.getenv("ONET_API_KEY") or os.getenv("ONET_KEY") or "").strip()
+    if api_key:
+        return OnetAuthConfig(mode="api_key", api_key=api_key)
+
+    username = (os.getenv("ONET_USERNAME") or os.getenv("ONET_USER") or "").strip()
+    password = (os.getenv("ONET_PASSWORD") or os.getenv("ONET_PASS") or "").strip()
+    if username and password:
+        return OnetAuthConfig(mode="basic", username=username, password=password)
+
+    raise OnetUnavailableError("O*NET credentials or API key are not configured.")
 
 
 def _auth_headers() -> dict[str, str]:
-    try:
-        return {"X-API-Key": _api_key()}
-    except OnetUnavailableError:
-        username, password = _basic_credentials()
-        token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
-        return {"Authorization": f"Basic {token}"}
+    auth = _auth_config()
+    if auth.mode == "api_key":
+        return {"X-api-key": auth.api_key}
+
+    token = base64.b64encode(f"{auth.username}:{auth.password}".encode("utf-8")).decode("ascii")
+    return {"Authorization": f"Basic {token}"}
 
 
 def _base_url() -> str:
@@ -79,7 +86,7 @@ def _get_json(path: str) -> dict[str, Any]:
     try:
         with urlopen(request, timeout=_timeout_seconds()) as response:
             return json.loads(response.read().decode("utf-8"))
-    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as exc:
+    except (HTTPError, URLError, TimeoutError, socket.timeout, json.JSONDecodeError) as exc:
         raise OnetUnavailableError(f"O*NET request failed: {exc}") from exc
 
 
@@ -134,13 +141,7 @@ def _profile_items(code: str, profile_type: str) -> list[str]:
     return [item for item in text_items if item][:8]
 
 
-def search_career_data(military_experience: str, mos_branch: str = "", *, max_results: int = 5) -> OnetCareerData:
-    """Search O*NET for likely civilian occupations and lightweight profile data."""
-    query_parts = [mos_branch.strip(), military_experience.strip()]
-    query = " ".join(part for part in query_parts if part)
-    if not query:
-        raise OnetUnavailableError("O*NET search query is empty.")
-
+def _search_endpoints(query: str, max_results: int) -> list[OnetOccupation]:
     occupations: list[OnetOccupation] = []
     for path, source in (
         (f"/online/crosswalks/military?keyword={quote(query)}", "O*NET military crosswalk"),
@@ -155,7 +156,10 @@ def search_career_data(military_experience: str, mos_branch: str = "", *, max_re
         occupations.extend(_normalize_occupations(payload, source=source))
         if len(occupations) >= max_results:
             break
+    return occupations
 
+
+def _dedupe_occupations(occupations: list[OnetOccupation], max_results: int) -> list[OnetOccupation]:
     deduped: list[OnetOccupation] = []
     seen: set[tuple[str, str]] = set()
     for occupation in occupations:
@@ -163,20 +167,36 @@ def search_career_data(military_experience: str, mos_branch: str = "", *, max_re
         if key not in seen:
             seen.add(key)
             deduped.append(occupation)
-    deduped = deduped[:max_results]
+        if len(deduped) >= max_results:
+            break
+    return deduped
 
-    tasks: list[str] = []
-    skills: list[str] = []
-    work_activities: list[str] = []
-    if deduped and deduped[0].code:
-        try:
-            tasks = _profile_items(deduped[0].code, "tasks")
-            skills = _profile_items(deduped[0].code, "skills")
-            work_activities = _profile_items(deduped[0].code, "work_activities")
-        except OnetUnavailableError:
-            tasks = []
-            skills = []
-            work_activities = []
+
+def _enrich_with_profile(occupations: list[OnetOccupation]) -> tuple[list[str], list[str], list[str]]:
+    if not occupations or not occupations[0].code:
+        return [], [], []
+
+    try:
+        code = occupations[0].code
+        return (
+            _profile_items(code, "tasks"),
+            _profile_items(code, "skills"),
+            _profile_items(code, "work_activities"),
+        )
+    except OnetUnavailableError:
+        return [], [], []
+
+
+def search_career_data(military_experience: str, mos_branch: str = "", *, max_results: int = 5) -> OnetCareerData:
+    """Search O*NET for likely civilian occupations and lightweight profile data."""
+    query_parts = [mos_branch.strip(), military_experience.strip()]
+    query = " ".join(part for part in query_parts if part)
+    if not query:
+        raise OnetUnavailableError("O*NET search query is empty.")
+
+    occupations = _search_endpoints(query, max_results)
+    deduped = _dedupe_occupations(occupations, max_results)
+    tasks, skills, work_activities = _enrich_with_profile(deduped)
 
     return OnetCareerData(
         occupations=deduped,

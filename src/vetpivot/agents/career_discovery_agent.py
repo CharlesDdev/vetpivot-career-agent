@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable
 
+from vetpivot.agents.live_validation import require_text
 from vetpivot.gemini_client import GeminiGenerator, GeminiUnavailableError, generate_json
 from vetpivot.schemas import CareerDiscoveryOutput, MissionInput, OnetReference, SuggestedRole
 from vetpivot.tools.onet_tool import OnetCareerData, OnetUnavailableError, search_career_data
@@ -92,13 +93,6 @@ def run_mock_career_discovery_agent(data: MissionInput) -> CareerDiscoveryOutput
     )
 
 
-def _require_text(payload: dict[str, object], key: str) -> str:
-    value = payload.get(key)
-    if not isinstance(value, str) or not value.strip():
-        raise GeminiUnavailableError(f"Gemini discovery response missing usable {key}.")
-    return value.strip()
-
-
 def _parse_roles(payload: dict[str, object]) -> list[SuggestedRole]:
     value = payload.get("suggested_roles")
     if not isinstance(value, list):
@@ -137,7 +131,7 @@ def _target_from_discovery(discovery: CareerDiscoveryOutput) -> str:
     if discovery.suggested_roles:
         role = discovery.suggested_roles[0]
         return f"{role.title}: {role.explanation}"
-    raise GeminiUnavailableError("Career discovery did not produce a selected target role.")
+    return ""
 
 
 def run_live_career_discovery_agent(
@@ -185,11 +179,10 @@ def run_live_career_discovery_agent(
     payload = generator(DISCOVERY_LIVE_SYSTEM_INSTRUCTION, prompt)
     discovery = CareerDiscoveryOutput(
         suggested_roles=_parse_roles(payload),
-        selected_target_role=_require_text(payload, "selected_target_role"),
-        career_discovery_notes=_require_text(payload, "career_discovery_notes"),
+        selected_target_role=require_text(payload, "selected_target_role", context="discovery"),
+        career_discovery_notes=require_text(payload, "career_discovery_notes", context="discovery"),
         onet_reference=onet_reference,
     )
-    _target_from_discovery(discovery)
     return discovery
 
 
@@ -204,4 +197,11 @@ def discovery_target_description(discovery: CareerDiscoveryOutput) -> str:
         onet_lines.append("O*NET skills: " + "; ".join(discovery.onet_reference.skills[:5]))
     if discovery.onet_reference.work_activities:
         onet_lines.append("O*NET work activities: " + "; ".join(discovery.onet_reference.work_activities[:5]))
-    return "\n".join([selected, *role_lines, *onet_lines]).strip()
+    lines: list[str] = []
+    seen: set[str] = set()
+    for line in [selected, *role_lines, *onet_lines]:
+        normalized = line.strip()
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            lines.append(normalized)
+    return "\n".join(lines)

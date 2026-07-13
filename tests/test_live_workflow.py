@@ -154,6 +154,15 @@ def test_live_workflow_returns_structured_report_with_mocked_gemini():
     assert result.evaluation.safety_flags
 
 
+def test_auto_workflow_uses_live_when_gemini_available():
+    result = run_workflow(sample_input(), mode="auto", gemini_generator=fake_generator)
+
+    assert isinstance(result, MissionReport)
+    assert result.mode == "live"
+    assert result.resume.professional_resume_bullet
+    assert result.job_fit.fit_label == "Strong Match"
+
+
 def test_live_workflow_fails_strictly_when_gemini_unavailable():
     def failing_generator(_: str, __: str) -> dict[str, object]:
         raise GeminiUnavailableError("Gemini unavailable")

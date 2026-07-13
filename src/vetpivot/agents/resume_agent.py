@@ -6,7 +6,8 @@ import json
 import re
 from collections.abc import Callable
 
-from vetpivot.gemini_client import GeminiGenerator, GeminiUnavailableError, generate_json
+from vetpivot.agents.live_validation import require_text
+from vetpivot.gemini_client import GeminiGenerator, generate_json
 from vetpivot.schemas import MissionInput, ResumeOutput
 from vetpivot.tools.vetpivot_translate_tool import VetPivotTranslateError, translate_text
 
@@ -20,13 +21,6 @@ RESUME_LIVE_SYSTEM_INSTRUCTION = (
 )
 
 NUMERIC_TOKEN_REGEX = re.compile(r"\$?\d[\d,]*(?:\.\d+)?(?:%|[kKmMbB])?")
-
-
-def _require_text(payload: dict[str, object], key: str) -> str:
-    value = payload.get(key)
-    if not isinstance(value, str) or not value.strip():
-        raise GeminiUnavailableError(f"Gemini resume response missing usable {key}.")
-    return value.strip()
 
 
 def _sanitize_unsupported_numbers(text: str, source_text: str) -> str:
@@ -88,11 +82,11 @@ def run_live_resume_agent(data: MissionInput, generator: GeminiGenerator = gener
     payload = generator(RESUME_LIVE_SYSTEM_INSTRUCTION, prompt)
     return ResumeOutput(
         professional_resume_bullet=_sanitize_unsupported_numbers(
-            _require_text(payload, "professional_resume_bullet"),
+            require_text(payload, "professional_resume_bullet", context="resume"),
             data.military_experience,
         ),
         ats_optimized_bullet=_sanitize_unsupported_numbers(
-            _require_text(payload, "ats_optimized_bullet"),
+            require_text(payload, "ats_optimized_bullet", context="resume"),
             data.military_experience,
         ),
     )

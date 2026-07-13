@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 
+from vetpivot.agents.live_validation import require_text, require_text_list
 from vetpivot.gemini_client import GeminiGenerator, GeminiUnavailableError, generate_json
 from vetpivot.schemas import JobFitOutput, MissionInput, ResumeOutput
 
@@ -91,20 +92,6 @@ def run_job_fit_agent(data: MissionInput, resume: ResumeOutput) -> JobFitOutput:
     )
 
 
-def _require_text(payload: dict[str, object], key: str) -> str:
-    value = payload.get(key)
-    if not isinstance(value, str) or not value.strip():
-        raise GeminiUnavailableError(f"Gemini job-fit response missing usable {key}.")
-    return value.strip()
-
-
-def _require_text_list(payload: dict[str, object], key: str) -> list[str]:
-    value = payload.get(key)
-    if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
-        raise GeminiUnavailableError(f"Gemini job-fit response missing usable {key}.")
-    return [item.strip() for item in value]
-
-
 def _strip_unsupported_numbers(text: str, source_text: str) -> str:
     allowed_tokens = {
         token.lower().replace(",", "")
@@ -151,16 +138,16 @@ def run_live_job_fit_agent(data: MissionInput, resume: ResumeOutput, generator: 
         indent=2,
     )
     payload = generator(JOB_FIT_LIVE_SYSTEM_INSTRUCTION, prompt)
-    fit_label = _require_text(payload, "fit_label")
+    fit_label = require_text(payload, "fit_label", context="job-fit")
     if fit_label not in {"Strong Match", "Partial Match", "Weak Match"}:
         raise GeminiUnavailableError("Gemini job-fit response returned an invalid fit_label.")
     return JobFitOutput(
         fit_label=fit_label,  # type: ignore[arg-type]
-        match_analysis=_require_text(payload, "match_analysis"),
-        matched_keywords=_require_text_list(payload, "matched_keywords"),
-        missing_keywords=_require_text_list(payload, "missing_keywords"),
+        match_analysis=require_text(payload, "match_analysis", context="job-fit"),
+        matched_keywords=require_text_list(payload, "matched_keywords", context="job-fit"),
+        missing_keywords=require_text_list(payload, "missing_keywords", context="job-fit"),
         interview_talking_points=_sanitize_interview_talking_points(
-            _require_text_list(payload, "interview_talking_points"),
+            require_text_list(payload, "interview_talking_points", context="job-fit"),
             " ".join(
                 [
                     data.military_experience,
